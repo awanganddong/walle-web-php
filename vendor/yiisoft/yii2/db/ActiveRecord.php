@@ -9,7 +9,6 @@ namespace yii\db;
 
 use Yii;
 use yii\base\InvalidConfigException;
-use yii\base\InvalidParamException;
 use yii\helpers\ArrayHelper;
 use yii\helpers\Inflector;
 use yii\helpers\StringHelper;
@@ -99,7 +98,7 @@ class ActiveRecord extends BaseActiveRecord
 
 
     /**
-     * Loads default values from database table schema
+     * Loads default values from database table schema.
      *
      * You may call this method to load default values after creating a new instance:
      *
@@ -120,6 +119,7 @@ class ActiveRecord extends BaseActiveRecord
                 $this->{$column->name} = $column->defaultValue;
             }
         }
+
         return $this;
     }
 
@@ -165,7 +165,7 @@ class ActiveRecord extends BaseActiveRecord
      * This method is internally called by [[findOne()]] and [[findAll()]].
      * @param mixed $condition please refer to [[findOne()]] for the explanation of this parameter
      * @return ActiveQueryInterface the newly created [[ActiveQueryInterface|ActiveQuery]] instance.
-     * @throws InvalidConfigException if there is no primary key defined.
+     * @throws InvalidConfigException if there is no primary key defined
      * @internal
      */
     protected static function findByCondition($condition)
@@ -180,45 +180,28 @@ class ActiveRecord extends BaseActiveRecord
                 if (!empty($query->join) || !empty($query->joinWith)) {
                     $pk = static::tableName() . '.' . $pk;
                 }
-                // if condition is scalar, search for a single primary key, if it is array, search for multiple primary key values
-                $condition = [$pk => is_array($condition) ? array_values($condition) : $condition];
+                $condition = [$pk => $condition];
             } else {
                 throw new InvalidConfigException('"' . get_called_class() . '" must have a primary key.');
             }
-        } elseif (is_array($condition)) {
-            $condition = static::filterCondition($condition);
         }
 
         return $query->andWhere($condition);
     }
 
     /**
-     * Filters array condition before it is assiged to a Query filter.
-     *
-     * This method will ensure that an array condition only filters on existing table columns.
-     *
-     * @param array $condition condition to filter.
-     * @return array filtered condition.
-     * @throws InvalidParamException in case array contains unsafe values.
-     * @since 2.0.12.1
-     * @internal
+     * @inheritdoc
      */
-    protected static function filterCondition(array $condition)
+    public function refresh()
     {
-        $result = [];
-        // valid column names are table column names or column names prefixed with table name
-        $columnNames = static::getTableSchema()->getColumnNames();
-        $columnNames = array_merge($columnNames, array_map(function($columnName) {
-            return static::tableName() . ".$columnName";
-        }, $columnNames));
-        foreach ($condition as $key => $value) {
-            if (is_string($key) && !in_array($key, $columnNames, true)) {
-                throw new InvalidParamException('Key "' . $key . '" is not a column name and can not be used as a filter');
-            }
-            $result[$key] = is_array($value) ? array_values($value) : $value;
+        $pk = [];
+        // disambiguate column names in case ActiveQuery adds a JOIN
+        foreach ($this->getPrimaryKey(true) as $key => $value) {
+            $pk[static::tableName() . '.' . $key] = $value;
         }
-
-        return $result;
+        /* @var $record BaseActiveRecord */
+        $record = static::findOne($pk);
+        return $this->refreshInternal($record);
     }
 
     /**
@@ -481,7 +464,7 @@ class ActiveRecord extends BaseActiveRecord
      * @param array $attributes list of attributes that need to be saved. Defaults to `null`,
      * meaning all attributes that are loaded from DB will be saved.
      * @return bool whether the attributes are valid and the record is inserted successfully.
-     * @throws \Exception in case insert failed.
+     * @throws \Exception|\Throwable in case insert failed.
      */
     public function insert($runValidation = true, $attributes = null)
     {
@@ -502,6 +485,7 @@ class ActiveRecord extends BaseActiveRecord
             } else {
                 $transaction->commit();
             }
+
             return $result;
         } catch (\Exception $e) {
             $transaction->rollBack();
@@ -590,7 +574,7 @@ class ActiveRecord extends BaseActiveRecord
      * or [[beforeSave()]] stops the updating process.
      * @throws StaleObjectException if [[optimisticLock|optimistic locking]] is enabled and the data
      * being updated is outdated.
-     * @throws \Exception in case update failed.
+     * @throws \Exception|\Throwable in case update failed.
      */
     public function update($runValidation = true, $attributeNames = null)
     {
@@ -611,6 +595,7 @@ class ActiveRecord extends BaseActiveRecord
             } else {
                 $transaction->commit();
             }
+
             return $result;
         } catch (\Exception $e) {
             $transaction->rollBack();
@@ -638,7 +623,7 @@ class ActiveRecord extends BaseActiveRecord
      * Note that it is possible the number of rows deleted is 0, even though the deletion execution is successful.
      * @throws StaleObjectException if [[optimisticLock|optimistic locking]] is enabled and the data
      * being deleted is outdated.
-     * @throws \Exception in case delete failed.
+     * @throws \Exception|\Throwable in case delete failed.
      */
     public function delete()
     {
@@ -654,6 +639,7 @@ class ActiveRecord extends BaseActiveRecord
             } else {
                 $transaction->commit();
             }
+
             return $result;
         } catch (\Exception $e) {
             $transaction->rollBack();

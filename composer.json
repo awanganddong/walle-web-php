@@ -13,7 +13,7 @@
   "minimum-stability": "stable",
   "require": {
     "php": ">=7.0.0",
-    "yiisoft/yii2": "2.0.12.2",
+    "yiisoft/yii2": "2.0.13",
     "yidas/yii2-bower-asset": "2.0.0"
   },
   "require-dev": {
@@ -25,10 +25,7 @@
       "yiisoft/yii2-composer": true
     }
   },
-  "extra": {
-    "asset-installer-paths": {
-      "npm-asset-library": "vendor/npm",
-      "bower-asset-library": "vendor/bower"
-    }
+  "replace": {
+    "bower-asset/inputmask": ">=3.2.0"
   }
 }

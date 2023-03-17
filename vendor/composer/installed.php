@@ -3,7 +3,7 @@
         'name' => 'meolu/walle-web',
         'pretty_version' => 'dev-master',
         'version' => 'dev-master',
-        'reference' => 'a7862c6e74310b88a30fb724e124e2fb7a161610',
+        'reference' => '3f1bf83b18a49ba72a4ea7114e2fd6618be19aa4',
         'type' => 'project',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -23,6 +23,12 @@
             'dev_requirement' => false,
             'provided' => array(
                 0 => '*',
+            ),
+        ),
+        'bower-asset/inputmask' => array(
+            'dev_requirement' => false,
+            'replaced' => array(
+                0 => '>=3.2.0',
             ),
         ),
         'bower-asset/jquery' => array(
@@ -130,7 +136,7 @@
         'meolu/walle-web' => array(
             'pretty_version' => 'dev-master',
             'version' => 'dev-master',
-            'reference' => 'a7862c6e74310b88a30fb724e124e2fb7a161610',
+            'reference' => '3f1bf83b18a49ba72a4ea7114e2fd6618be19aa4',
             'type' => 'project',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
@@ -554,9 +560,9 @@
             'dev_requirement' => false,
         ),
         'yiisoft/yii2' => array(
-            'pretty_version' => '2.0.12.2',
-            'version' => '2.0.12.2',
-            'reference' => '8ec73da1e0f56e74ebc01aa09faf5fdc65d76c45',
+            'pretty_version' => '2.0.13',
+            'version' => '2.0.13.0',
+            'reference' => '9f82b8f0df9adb4b8a410be5aaa97818153689d9',
             'type' => 'library',
             'install_path' => __DIR__ . '/../yiisoft/yii2',
             'aliases' => array(),

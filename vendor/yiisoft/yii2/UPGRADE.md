@@ -22,7 +22,7 @@ Before upgrading, make sure you have a global installation of the latest version
 as well as a stable version of Composer:
 
     composer self-update
-    composer global require "fxp/composer-asset-plugin:^1.3.1" --no-plugins
+    composer global require "fxp/composer-asset-plugin:^1.4.1" --no-plugins
 
 The simple way to upgrade Yii, for example to version 2.0.10 (replace this with the version you want) will be running `composer require`:
 
@@ -35,7 +35,7 @@ upgrade might fail when the Yii version you chose has slightly different depende
 Another way to upgrade is to change the `composer.json` file to require the new Yii version and then
 run `composer update` by specifying all packages that are allowed to be updated.
 
-    composer update yiisoft/yii2 yiisoft/yii2-composer bower-asset/jquery.inputmask
+    composer update yiisoft/yii2 yiisoft/yii2-composer bower-asset/inputmask
 
 The above command will only update the specified packages and leave the versions of all other dependencies intact.
 This helps to update packages step by step without causing a lot of package version changes that might break in some way.
@@ -50,47 +50,85 @@ if you want to upgrade from version A to version C and there is
 version B between A and C, you need to follow the instructions
 for both A and B.
 
-
 Upgrade from Yii 2.0.12
 -----------------------
 
-* When hash format condition (array) is used in `yii\db\ActiveRecord::findOne()` and `findAll()`, the array keys (column names)
-  are now limited to the table column names. This is to prevent SQL injection if input was not filtered properly.
-  You should check all usages of `findOne()` and `findAll()` to ensure that input is filtered correctly.
-  If you need to find models using different keys than the table columns, use `find()->where(...)` instead.
+* The `yii\web\Request` class allowed to determine the value of `getIsSecureConnection()` form the
+  `X-Forwarded-Proto` header if the connection was made via a normal HTTP request. This behavior
+  was insecure as the header could have been set by a malicious client on a non-HTTPS connection.
+  With 2.0.13 Yii adds support for configuring trusted proxies. If your application runs behind a reverse proxy and relies on
+  `getIsSecureConnection()` to return the value form the `X-Forwarded-Proto` header you need to explicitly allow
+  this in the Request configuration. See the [guide](http://www.yiiframework.com/doc-2.0/guide-runtime-requests.html#trusted-proxies) for more information.
 
-  It's not an issue in the default generated code though as ID is filtered by
-  controller code:
-
-  The following code examples are **not** affected by this issue (examples shown for `findOne()` are valid also for `findAll()`):
-
-  ```php
-  // yii\web\Controller ensures that $id is scalar
-  public function actionView($id)
-  {
-      $model = Post::findOne($id);
-      // ...
-  }
-  ```
+  This setting also affects you when Yii is running on IIS webserver, which sets the `X-Rewrite-Url` header.
+  This header is now filtered by default and must be listed in trusted hosts to be detected by Yii:
 
   ```php
-  // casting to (int) or (string) ensures no array can be injected (an exception will be thrown so this is not a good practise)
-  $model = Post::findOne((int) Yii::$app->request->get('id'));
+  [   // accept X-Rewrite-Url from all hosts, as it will be set by IIS
+      '/.*/' => ['X-Rewrite-Url'],
+  ]
   ```
 
-  ```php
-  // explicitly specifying the colum to search, passing a scalar or array here will always result in finding a single record
-  $model = Post::findOne(['id' => Yii::$app->request->get('id')]);
+* For compatibiliy with [PHP 7.2 which does not allow classes to be named `Object` anymore](https://wiki.php.net/rfc/object-typehint),
+  we needed to rename `yii\base\Object` to `yii\base\BaseObject`.
+  
+  `yii\base\Object` still exists for backwards compatibility and will be loaded if needed in projects that are
+  running on PHP <7.2. The compatibility class `yii\base\Object` extends from `yii\base\BaseObject` so if you
+  have classes that extend from `yii\base\Object` these would still work.
+  
+  What does not work however will be code that relies on `instanceof` checks or `is_subclass_of()` calls
+  for `yii\base\Object` on framework classes as these do not extend `yii\base\Object` anymore but only
+  extend from `yii\base\BaseObject`. In general such a check is not needed as there is a `yii\base\Configurable`
+  interface you should check against instead.
+  
+  Here is a visualisation of the change (`a < b` means "b extends a"):
+  
   ```
+  Before:
+  
+  yii\base\Object < Framework Classes
+  yii\base\Object < Application Classes
+  
+  After Upgrade:
+  
+  yii\base\BaseObject < Framework Classes
+  yii\base\BaseObject < yii\base\Object < Application Classes
 
-  The following code however **is vulnerable**, an attacker could inject an array with an arbitrary condition and even exploit SQL injection:
-
-  ```php
-  $model = Post::findOne(Yii::$app->request->get('id'));
   ```
+  
+  If you want to upgrade PHP to version 7.2 in your project you need to remove all cases that extend `yii\base\Object`
+  and extend from `yii\base\BaseObject` instead:
+  
+  ```
+  yii\base\BaseObject < Framework Classes
+  yii\base\BaseObject < Application Classes
+  ```
+  
+  For extensions that have classes extending from `yii\base\Object`, to be compatible with PHP 7.2, you need to
+  require `"yiisoft/yii2": "~2.0.13"` in composer.json and change affected classes to extend from `yii\base\BaseObject`
+  instead. It is not possible to allow Yii versions `<2.0.13` and be compatible with PHP 7.2 or higher.
 
-  For the above example, the SQL injection part is fixed with the patches provided in this release, but an attacker may still be able to search
-  records by different condition than a primary key search and violate your application business logic. So passing user input directly like this can cause problems and should be avoided.
+* A new method `public static function instance($refresh = false);` has been added to the `yii\db\ActiveRecordInterface` via a new
+  `yii\base\StaticInstanceInterface`. This change may affect your application in the following ways:
+
+  - If you have an `instance()` method defined in an `ActiveRecord` or `Model` class, you need to check whether the behavior is
+    compatible with the method added by Yii.
+  - Otherwise this method is implemented in the `yii\base\Model`, so the change only affects your code if you implement `ActiveRecordInterface`
+    in a class that does not extend `Model`. You may use `yii\base\StaticInstanceTrait` to implement it.
+    
+* Fixed built-in validator creating when model has a method with the same name. 
+
+  It is documented, that for the validation rules declared in model by `yii\base\Model::rules()`, validator can be either 
+  a built-in validator name, a method name of the model class, an anonymous function, or a validator class name. 
+  Before this change behavior was inconsistent with the documentation: method in the model had higher priority, than
+  a built-in validator. In case you have relied on this behavior, make sure to fix it.
+
+* Behavior was changed for methods `yii\base\Module::get()` and `yii\base\Module::has()` so in case when the requested
+  component was not found in the current module, the parent ones will be checked for this component hierarchically.
+  Considering that the root parent module is usually an application, this change can reduce calls to global `Yii::$app->get()`,
+  and replace them with module-scope calls to `get()`, making code more reliable and easier to test.
+  However, this change may affect your application if you have code that uses method `yii\base\Module::has()` in order
+  to check existence of the component exactly in this specific module. In this case make sure the logic is not corrupted.
 
 
 Upgrade from Yii 2.0.11
@@ -115,6 +153,9 @@ Upgrade from Yii 2.0.11
 * `yii\filters\AccessControl` now can be used without `user` component.  
   In this case `yii\filters\AccessControl::denyAccess()` throws `yii\web\ForbiddenHttpException` and using `AccessRule` 
   matching a role throws `yii\base\InvalidConfigException`.
+  
+* Inputmask package name was changed from `jquery.inputmask` to `inputmask`. If you've configured path to
+  assets manually, please adjust it. 
 
 Upgrade from Yii 2.0.10
 -----------------------
