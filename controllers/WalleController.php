@@ -166,6 +166,7 @@ class WalleController extends Controller
             // 1.检测宿主机检出目录是否可读写
             $codeBaseDir = Project::getDeployFromDir();
             $isWritable = is_dir($codeBaseDir) ? is_writable($codeBaseDir) : @mkdir($codeBaseDir, 0755, true);
+            var_dump($isWritable);die;
             if (!$isWritable) {
                 $code = -1;
                 $log[] = yii::t('walle', 'hosted server is not writable error', [
