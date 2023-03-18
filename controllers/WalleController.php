@@ -20,6 +20,7 @@ use app\models\Group;
 use app\models\Record;
 use app\models\Task as TaskModel;
 use yii;
+
 class WalleController extends Controller
 {
 
@@ -135,13 +136,13 @@ class WalleController extends Controller
         $projectTable = Project::tableName();
         $groupTable = Group::tableName();
         $projects = Project::find()
-                           ->leftJoin(Group::tableName(), "`$groupTable`.`project_id` = `$projectTable`.`id`")
-                           ->where([
-                               "`$projectTable`.status" => Project::STATUS_VALID,
-                               "`$groupTable`.`user_id`" => $this->uid
-                           ])
-                           ->asArray()
-                           ->all();
+            ->leftJoin(Group::tableName(), "`$groupTable`.`project_id` = `$projectTable`.`id`")
+            ->where([
+                "`$projectTable`.status" => Project::STATUS_VALID,
+                "`$groupTable`.`user_id`" => $this->uid
+            ])
+            ->asArray()
+            ->all();
 
         return $this->render('check', [
             'projects' => $projects,
@@ -165,6 +166,11 @@ class WalleController extends Controller
 
             // 1.检测宿主机检出目录是否可读写
             $codeBaseDir = Project::getDeployFromDir();
+
+            var_dump($codeBaseDir);
+            $res = mkdir($codeBaseDir, 0755, true);
+            var_dump($res);
+            die;
             $isWritable = is_dir($codeBaseDir) ? is_writable($codeBaseDir) : @mkdir($codeBaseDir, 0755, true);
             if (!$isWritable) {
                 $code = -1;
@@ -347,9 +353,9 @@ class WalleController extends Controller
     public function actionDeploy($taskId)
     {
         $this->task = TaskModel::find()
-                               ->where(['id' => $taskId])
-                               ->with(['project'])
-                               ->one();
+            ->where(['id' => $taskId])
+            ->with(['project'])
+            ->one();
         if (!$this->task) {
             throw new \Exception(yii::t('walle', 'deployment id not exists'));
         }
@@ -370,11 +376,11 @@ class WalleController extends Controller
     public function actionGetProcess($taskId)
     {
         $record = Record::find()
-                        ->select(['percent' => 'action', 'status', 'memo', 'command'])
-                        ->where(['task_id' => $taskId,])
-                        ->orderBy('id desc')
-                        ->asArray()
-                        ->one();
+            ->select(['percent' => 'action', 'status', 'memo', 'command'])
+            ->where(['task_id' => $taskId,])
+            ->orderBy('id desc')
+            ->asArray()
+            ->one();
         $record['memo'] = isset($record['memo']) ? stripslashes($record['memo']) : '';
         $record['command'] = isset($record['command']) ? stripslashes($record['command']) : '';
 
@@ -517,7 +523,7 @@ class WalleController extends Controller
      * 执行远程服务器任务集合
      * 对于目标机器更多的时候是一台机器完成一组命令，而不是每条命令逐台机器执行
      *
-     * @param string  $version
+     * @param string $version
      * @param integer $delay 每台机器延迟执行post_release任务间隔, 不推荐使用, 仅当业务无法平滑重启时使用
      * @throws \Exception
      */
@@ -560,12 +566,12 @@ class WalleController extends Controller
         $where = ' status = :status AND project_id = :project_id ';
         $param = [':status' => TaskModel::STATUS_DONE, ':project_id' => $this->task->project_id];
         $offset = TaskModel::find()
-                           ->select(['id'])
-                           ->where($where, $param)
-                           ->orderBy(['id' => SORT_DESC])
-                           ->offset($this->conf->keep_version_num)
-                           ->limit(1)
-                           ->scalar();
+            ->select(['id'])
+            ->where($where, $param)
+            ->orderBy(['id' => SORT_DESC])
+            ->offset($this->conf->keep_version_num)
+            ->limit(1)
+            ->scalar();
         if (!$offset) {
             return true;
         }
