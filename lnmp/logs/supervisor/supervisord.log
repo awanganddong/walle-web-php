@@ -1,0 +1,7 @@
+2021-07-18 10:14:00,185 WARN No file matches via include "/etc/supervisor/conf.d/*.conf"
+2021-07-18 10:14:00,187 INFO Set uid to user 0 succeeded
+2021-07-18 10:14:00,206 INFO RPC interface 'supervisor' initialized
+2021-07-18 10:14:00,208 INFO RPC interface 'supervisor' initialized
+2021-07-18 10:14:00,210 CRIT Server 'unix_http_server' running without any HTTP authentication checking
+2021-07-18 10:14:00,212 INFO daemonizing the supervisord process
+2021-07-18 10:14:00,215 INFO supervisord started with pid 29

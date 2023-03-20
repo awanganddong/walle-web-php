@@ -1,0 +1,38 @@
+version: '3'
+services:
+  php:
+    container_name: php
+    build: ./dockerfile/php
+    expose:
+      - "9000"
+    restart: always
+    volumes:
+      - /Users/www:/www
+      - /${ROOT}/logs/php:/var/log/php
+      - /${ROOT}/logs/supervisor:/var/log/supervisor
+      - /${ROOT}/conf/php/php.ini:/etc/php/php.ini:rw
+      - /${ROOT}/conf/php/php-fpm.conf:/usr/local/etc/php-fpm.conf:rw
+      - /${ROOT}/conf/php-fpm.d:/etc/php/php-fpm.d
+      - /${ROOT}/conf/php/supervisord.conf:/etc/supervisor/supervisord.conf
+      - /${ROOT}/conf/supervisor.d:/etc/supervisor/conf.d
+    stdin_open: true
+    tty: true
+    networks:
+      - lnmp-networks
+  nginx:
+    container_name: nginx
+    build: ./dockerfile/nginx
+    ports:
+      - "80:80"
+    restart: always
+    volumes:
+      - /Users/www:/www
+      - /${ROOT}/logs/nginx:/var/log/nginx
+      - /${ROOT}/conf/nginx/conf.d:/etc/nginx/conf.d
+      - /${ROOT}/conf/nginx/nginx.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - php
+    networks:
+      - lnmp-networks
+networks:
+  lnmp-networks:
