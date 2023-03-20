@@ -166,11 +166,6 @@ class WalleController extends Controller
 
             // 1.检测宿主机检出目录是否可读写
             $codeBaseDir = Project::getDeployFromDir();
-            var_dump(getenv("USER"));
-            var_dump($codeBaseDir);
-            $res = mkdir($codeBaseDir, 0755, true);
-            var_dump($res);
-            die;
             $isWritable = is_dir($codeBaseDir) ? is_writable($codeBaseDir) : @mkdir($codeBaseDir, 0755, true);
             if (!$isWritable) {
                 $code = -1;
